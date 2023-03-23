@@ -16,9 +16,10 @@ fn main() {
         let stream = stream.unwrap();
 
         let pool = ThreadPool::new(13);
+        println!("Threads in my pool:{:#?}", pool.threads);
         pool.execute(|| {
             handle_connection(stream);
-        })
+        });
     }
 }
 
