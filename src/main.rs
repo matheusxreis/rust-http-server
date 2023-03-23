@@ -1,8 +1,9 @@
+use http_server::ThreadPool;
 use std::{
     fs,
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
-    thread,
+    thread::{self, Thread},
     time::Duration,
 };
 
@@ -14,7 +15,10 @@ fn main() {
     for stream in listener.incoming() {
         let stream = stream.unwrap();
 
-        handle_connection(stream);
+        let pool = ThreadPool::new(13);
+        pool.execute(|| {
+            handle_connection(stream);
+        })
     }
 }
 
@@ -34,7 +38,7 @@ fn handle_connection(mut stream: TcpStream) {
         "GET /sleep HTTP/1.1" => {
             thread::sleep(Duration::from_secs(5));
             ("HTTP/1.1 200 OK", "templates/hello.html")
-        },
+        }
         _ => ("HTTP/1.1 404 NOT FOUND", "templates/404.html"),
     };
 
