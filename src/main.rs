@@ -3,7 +3,7 @@ use std::{
     fs,
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
-    thread::{self, Thread},
+    thread,
     time::Duration,
 };
 
@@ -15,11 +15,12 @@ fn main() {
     for stream in listener.incoming() {
         let stream = stream.unwrap();
 
-        let pool = ThreadPool::new(13);
-       // println!("Threads in my pool:{:#?}", pool.workers);
-        pool.execute(|| {
-            handle_connection(stream);
-        });
+        if let Ok(pool) = ThreadPool::build(13) {
+            pool.execute(|| {
+                handle_connection(stream);
+            });
+        }
+        // println!("Threads in my pool:{:#?}", pool.workers);
     }
 }
 

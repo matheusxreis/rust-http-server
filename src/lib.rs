@@ -12,8 +12,10 @@ impl ThreadPool {
     /// # Panics
     ///
     /// The `new` function will panic if the size is zero.
-    pub fn new(size: usize) -> ThreadPool {
-        assert!(size > 0);
+    pub fn build(size: usize) -> Result<ThreadPool, &'static str> {
+        if size == 0 {
+            return Err("size can't be equal 0");
+        }
 
         let mut workers: Vec<Worker> = Vec::with_capacity(size);
         for id in 0..size {
@@ -21,7 +23,7 @@ impl ThreadPool {
                 workers.push(w)
             }
         }
-        ThreadPool { workers }
+        Ok(ThreadPool { workers })
     }
     pub fn execute<F>(&self, f: F)
     where
