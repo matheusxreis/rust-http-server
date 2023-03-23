@@ -1,8 +1,13 @@
-use std::thread;
+use std::{
+    sync::{mpsc, Arc, Mutex},
+    thread,
+};
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
+    sender: mpsc::Sender<Job>,
 }
+struct Job;
 
 impl ThreadPool {
     /// Create a new ThreadPool.
@@ -17,13 +22,19 @@ impl ThreadPool {
             return Err("size can't be equal 0");
         }
 
+        // multiple producer, single consumer
+        // Arc type allows multiple receiver
+        // Mutex ensures that only one worker gets a job from the receiver at a time
+        let (sender, receiver) = mpsc::channel();
+        let receiver = Arc::new(Mutex::new(receiver));
+
         let mut workers: Vec<Worker> = Vec::with_capacity(size);
         for id in 0..size {
-            if let Ok(w) = Worker::build(id) {
+            if let Ok(w) = Worker::build(id, Arc::clone(&receiver)) {
                 workers.push(w)
             }
         }
-        Ok(ThreadPool { workers })
+        Ok(ThreadPool { workers, sender })
     }
     pub fn execute<F>(&self, f: F)
     where
@@ -40,10 +51,12 @@ struct Worker {
 }
 
 impl Worker {
-    fn build(id: usize) -> Result<Worker, &'static str> {
+    fn build(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Result<Worker, &'static str> {
         let builder = thread::Builder::new();
         let mut thread: thread::JoinHandle<()>;
-        if let Ok(join_handler) = builder.spawn(|| {}) {
+        if let Ok(join_handler) = builder.spawn(|| {
+            receiver;
+        }) {
             thread = join_handler;
             return Ok(Worker { id, thread });
         }
