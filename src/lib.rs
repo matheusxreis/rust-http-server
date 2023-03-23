@@ -1,4 +1,4 @@
-use std::thread::{self, JoinHandle};
+use std::thread;
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
@@ -17,8 +17,9 @@ impl ThreadPool {
 
         let mut workers: Vec<Worker> = Vec::with_capacity(size);
         for id in 0..size {
-            let w = Worker::new(id);
-            workers.push(w)
+            if let Ok(w) = Worker::build(id) {
+                workers.push(w)
+            }
         }
         ThreadPool { workers }
     }
@@ -32,13 +33,18 @@ impl ThreadPool {
 #[derive(Debug)]
 
 struct Worker {
-    pub id: usize,
-    pub thread: thread::JoinHandle<()>,
+    id: usize,
+    thread: thread::JoinHandle<()>,
 }
 
 impl Worker {
-    fn new(id: usize) -> Worker {
-        let thread = thread::spawn(|| {});
-        Worker { id, thread }
+    fn build(id: usize) -> Result<Worker, &'static str> {
+        let builder = thread::Builder::new();
+        let mut thread: thread::JoinHandle<()>;
+        if let Ok(join_handler) = builder.spawn(|| {}) {
+            thread = join_handler;
+            return Ok(Worker { id, thread });
+        }
+        Err("Error when create worker")
     }
 }
