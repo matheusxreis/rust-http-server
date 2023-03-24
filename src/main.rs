@@ -17,7 +17,7 @@ fn main() {
     if let Ok(p) = ThreadPool::build(13) {
         pool = Some(p);
     }
-    for stream in listener.incoming() {
+    for stream in listener.incoming().take(2) {
         let stream = stream.unwrap();
         match pool {
             Some(ref p) => {
@@ -27,7 +27,9 @@ fn main() {
             }
             _ => {}
         }
-    }
+    } // with take(2), after 2 items the looping will stop
+    // and the ThreadPool will go out of scope 
+    // and then ThreadPool Drop implementation will execute
 }
 
 fn handle_connection(mut stream: TcpStream) {
